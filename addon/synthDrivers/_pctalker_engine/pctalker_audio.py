@@ -61,11 +61,19 @@ class EdgeTrimmer(object):
     and they get emitted after all.
     """
 
+    #: Quiet samples kept immediately before the first sound, in samples at
+    #: 18356 Hz -- about 3 ms.  Cutting exactly at the onset makes the block
+    #: begin at whatever amplitude the speech happens to start on, and against
+    #: the previous chunk's last sample that step is a click.  A few samples of
+    #: real silence give the waveform somewhere to start from.
+    LEAD_IN = 55
+
     def __init__(self, zero=128, tol=2):
         self.zero = zero
         self.tol = tol
         self.started = False
         self.pending = bytearray()
+        self.leadin = bytearray()
 
     def feed(self, pcm8):
         out = bytearray()
@@ -74,8 +82,15 @@ class EdgeTrimmer(object):
             quiet = -tol <= b - zero <= tol
             if not self.started:
                 if quiet:
+                    # remember only the last few, as a soft place to begin
+                    self.leadin.append(b)
+                    if len(self.leadin) > self.LEAD_IN:
+                        del self.leadin[0]
                     continue
                 self.started = True
+                if self.leadin:
+                    out += self.leadin
+                    del self.leadin[:]
             if quiet:
                 self.pending.append(b)
             else:
@@ -96,9 +111,27 @@ class Resampler(object):
     """
 
     def __init__(self, src_rate, dst_rate, speed=1.0):
-        self.ratio = (float(src_rate) / float(dst_rate)) * float(speed)
+        self.dst_rate = float(dst_rate)
+        self.speed = float(speed)
+        self.src_rate = float(src_rate)
+        self.ratio = (self.src_rate / self.dst_rate) * self.speed
         self.pos = 0.0
         self.prev = 0
+
+    def set_source_rate(self, src_rate):
+        """Follow a source rate that moves while the utterance is playing.
+
+        PC-TALKER 5.01 does not settle on its final PIT divisor immediately, so
+        the first blocks of the first utterance arrive at a rate that then
+        changes.  Fixing the ratio at the first block leaves those blocks
+        resampled wrongly, which is heard as the pitch wobbling before it
+        steadies.  Phase and the carried sample are kept, so following the rate
+        costs nothing at the join.
+        """
+        if float(src_rate) == self.src_rate:
+            return
+        self.src_rate = float(src_rate)
+        self.ratio = (self.src_rate / self.dst_rate) * self.speed
 
     def feed(self, pcm16):
         if not pcm16:

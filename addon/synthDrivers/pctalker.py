@@ -49,7 +49,7 @@ class SynthDriver(SynthDriver):
     name = "pctalker"
     #: Kiraly Jozsef asked, 2026-08-11, that the synthesizer list show
     #: "- Hungarian -" here rather than his name.
-    description = "PC-TALKER - Hungarian -"
+    description = "PC-TALKER (Hungarian)"
 
     # NOTE: the reverb setting is deliberately NOT exposed yet.  `#vnnnn` is
     # documented in the 1991 manual under OLVAS, and it is not established that
@@ -202,7 +202,22 @@ class SynthDriver(SynthDriver):
         return 0.82 + (self._rate / 100.0) * 0.36    # 0.82x .. 1.18x, 50 -> 1.0
 
     # -- worker ------------------------------------------------------------
+    def _warm(self, voice):
+        """Build an engine before it is needed, off the main thread.
+
+        The engine is constructed lazily on first use, which means the first
+        utterance after start-up -- or after switching voice -- also pays for
+        loading a 640 KB memory image and standing up a CPU emulator.  Audio
+        starts feeding while that is still happening, and the player runs dry:
+        heard as the pitch wobbling for a moment before it settles.
+        """
+        try:
+            voice.engine
+        except Exception:
+            log.error("PC-TALKER could not prepare %s" % voice.id, exc_info=True)
+
     def _run(self):
+        self._warm(self._voice)
         while not self._stopped:
             job = self._queue.get()
             if job is None:
@@ -252,6 +267,11 @@ class SynthDriver(SynthDriver):
             if state["resampler"] is None:
                 state["resampler"] = pctalker_audio.Resampler(
                     rate, OUT_RATE, self._speed)
+            else:
+                # 5.01 reports a rate that moves during its first utterance,
+                # and resampling later blocks with the first block's ratio is
+                # heard as the pitch wobbling before it settles.
+                state["resampler"].set_source_rate(rate)
             data = pctalker_audio.apply_gain(
                 state["resampler"].feed(voice.to_pcm16(pcm8)), gain)
             if data:
@@ -295,3 +315,5 @@ class SynthDriver(SynthDriver):
         # wrong rate, so drop whatever is queued first.
         self.cancel()
         self._voiceId = value
+        threading.Thread(target=self._warm, args=(self._voice,),
+                         name="pctalker-warm", daemon=True).start()
