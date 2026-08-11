@@ -153,12 +153,47 @@ class Speaker10(Voice):
                      should_cancel=should_cancel)
 
 
-VOICES = (Speaker10, PCTalker501)
 
-#: SPEAKER is the default deliberately: it is the cleaner voice, having no
-#: smoothing stage and therefore no echo.  Stated rather than inferred from
-#: dict order, because it is the most user-visible decision in the add-on.
-DEFAULT_VOICE = Speaker10.id
+class Readspf1990(Voice):
+    """The earliest of the three, and the one that needs no help.
+
+    `READSPF.EXE`, 18 March 1990 -- the build the author's own `READSPF.ASM`
+    describes.  It reads standard input directly and speaks numbers by itself,
+    so it needs neither the command-tail trick the 1991 build requires nor the
+    Hungarian numeral expansion.  Same voice, same 18356 Hz, no smoothing echo.
+    """
+
+    id = "readspf1990"
+    label = "READSPF (1990) - PC speaker"
+    chunk = 200
+    encoding = "cwi2"
+    pcm_zero = 64
+    pcm_shift = 9
+
+    def available(self):
+        return os.path.isfile(os.path.join(_HERE, "READSPF.EXE"))
+
+    def _build(self):
+        import pctalker_speaker
+        return pctalker_speaker.StdinEngine()
+
+    def speak(self, text, on_block, should_cancel=None):
+        engine = self.engine
+        rate = engine.rate
+        engine.speak(self.encode(text),
+                     on_block=lambda pcm8: on_block(pcm8, rate),
+                     should_cancel=should_cancel)
+
+
+#: Ordered by date, so the voice list reads as a lineage:
+#: 18 Mar 1990 -> 27 Jan 1991 -> 1991 Sound Blaster.
+VOICES = (Readspf1990, Speaker10, PCTalker501)
+
+#: The 1990 reader is the default: cleanest of the three, and the only one
+#: needing none of this add-on's workarounds -- it reads its own text and says
+#: its own numbers.  Stated rather than inferred from dict order, because it is
+#: the most user-visible decision here.
+DEFAULT_VOICE = Readspf1990.id
 
 
 def default_voice(registry):

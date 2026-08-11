@@ -82,7 +82,9 @@ class _Host(DosHost):
     playback is driven by `hlt`, which we service directly.
     """
 
-    def __init__(self, cwd):
+    def __init__(self, cwd, stdin=b""):
+        self.stdin = stdin
+        self.stdin_pos = 0
         self.pwm = bytearray()
         self.ch0_divisor = 0
         self._ch0_latch = []
@@ -129,6 +131,73 @@ class _Host(DosHost):
         elif port == 0x43 and (value >> 6) == 0:
             del self._ch0_latch[:]
         super()._on_out(uc, port, size, value, user)
+
+    # -- standard input ----------------------------------------------------
+    # The base host wires handle 0 to the keyboard queue only, so a program
+    # reading redirected input sees nothing.  DOS feeds all of these routes
+    # from one file position, and READSPF uses several of them.
+    def _getc(self):
+        if self.stdin_pos >= len(self.stdin):
+            return None
+        ch = self.stdin[self.stdin_pos]
+        self.stdin_pos += 1
+        return ch
+
+    def _dos(self, ah, al, ax):
+        uc = self.uc
+        if ah == 0x3F and uc.reg_read(UC_X86_REG_BX) == 0:
+            cx = uc.reg_read(UC_X86_REG_CX)
+            data = self.stdin[self.stdin_pos:self.stdin_pos + cx]
+            self.stdin_pos += len(data)
+            if data:
+                uc.mem_write(uc.reg_read(UC_X86_REG_DS) * 16
+                             + uc.reg_read(UC_X86_REG_DX), data)
+            uc.reg_write(UC_X86_REG_AX, len(data))
+            self._cf(False)
+            return
+        if ah == 0x06 and (uc.reg_read(UC_X86_REG_DX) & 0xFF) == 0xFF:
+            ch = self._getc()
+            f = uc.reg_read(UC_X86_REG_EFLAGS)
+            if ch is None:
+                uc.reg_write(UC_X86_REG_AX, ax & 0xFF00)
+                uc.reg_write(UC_X86_REG_EFLAGS, f | 0x40)
+            else:
+                uc.reg_write(UC_X86_REG_AX, (ax & 0xFF00) | ch)
+                uc.reg_write(UC_X86_REG_EFLAGS, f & ~0x40)
+            self._cf(False)
+            return
+        if ah in (0x01, 0x07, 0x08):
+            uc.reg_write(UC_X86_REG_AX, (ax & 0xFF00) | (self._getc() or 0))
+            self._cf(False)
+            return
+        if ah == 0x0B:
+            left = len(self.stdin) - self.stdin_pos
+            uc.reg_write(UC_X86_REG_AX, (ax & 0xFF00) | (0xFF if left else 0))
+            self._cf(False)
+            return
+        if ah == 0x0A:
+            base = uc.reg_read(UC_X86_REG_DS) * 16 + uc.reg_read(UC_X86_REG_DX)
+            maxlen = uc.mem_read(base, 1)[0]
+            line = bytearray()
+            while self.stdin_pos < len(self.stdin) and len(line) < max(1, maxlen - 1):
+                ch = self._getc()
+                if ch in (None, 13, 26):
+                    break
+                line.append(ch)
+            uc.mem_write(base + 1, bytes([len(line)]))
+            uc.mem_write(base + 2, bytes(line) + b"\r")
+            self._cf(False)
+            return
+        if ah == 0x2C:
+            # These programs measure the machine by counting AH=2C calls across
+            # 0.30 s of DOS clock.  A frozen clock is an infinite loop.
+            t = self.vtime
+            uc.reg_write(UC_X86_REG_CX, (((int(t) // 3600) % 24) << 8)
+                         | ((int(t) // 60) % 60))
+            uc.reg_write(UC_X86_REG_DX, ((int(t) % 60) << 8) | (int(t * 100) % 100))
+            self._cf(False)
+            return
+        super()._dos(ah, al, ax)
 
     # -- interrupts --------------------------------------------------------
     def _service(self, intno):
@@ -349,3 +418,48 @@ def _save_regs(uc):
 def _load_regs(uc, d):
     for r in _REGS:
         uc.reg_write(r, d[r])
+
+
+class StdinEngine(object):
+    """The 1990 reader, `READSPF.EXE`, driven the way its author intended.
+
+    Its own source header says `standard input olvasas Ctrl C -ig`, and that is
+    exactly what it does: text goes in on standard input and speech comes out.
+    No command-tail switch, no buffer to poke, no 126-byte limit -- and unlike
+    the 1991 `OLVASSP.EXE` it reads numbers by itself.
+
+    This is the build `READDEMO.BAT` was written for.  The binary archived in
+    the 1992 package was a different, later one, which is why that batch file
+    appeared not to work.  The author found this copy on 2026-08-10; it is
+    dated 18 March 1990 and matches his own `READSPF.ASM`.
+
+    A fresh guest per utterance: this is not a TSR and has no re-entry point,
+    so it is loaded, fed and allowed to finish, exactly as DOS ran it.
+    """
+
+    id = "readspf1990"
+
+    def __init__(self, exe_path=None, work_dir=None):
+        here = os.path.dirname(os.path.abspath(__file__))
+        self.exe = exe_path or os.path.join(here, "READSPF.EXE")
+        if not os.path.isfile(self.exe):
+            raise EngineError("READSPF.EXE is missing from %s" % here)
+        self.work = work_dir or here
+        self.rate = SAMPLE_RATE
+
+    def speak(self, text, on_block=None, block=2048, should_cancel=None):
+        raw = text if isinstance(text, bytes) else text.encode("cp437", "replace")
+        raw = raw.replace(b"\r", b" ").replace(b"\n", b" ").strip()
+        if not raw:
+            return b""
+        # CR ends the line and Ctrl-Z ends the input: what DOS delivered from a
+        # redirected file, and what this program waits for before it stops.
+        host = _Host(self.work, raw + b"\r" + b"\n" + b"\x1a")
+        host.start(self.exe)
+        host.pump(host.uc.reg_read(UC_X86_REG_CS) * 16
+                  + host.uc.reg_read(UC_X86_REG_IP),
+                  on_block=on_block, block=block, should_cancel=should_cancel)
+        return bytes(host.pwm)
+
+    def reset(self):
+        pass

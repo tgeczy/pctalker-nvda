@@ -1,6 +1,6 @@
 # PC-TALKER for NVDA
 
-Two Hungarian speech synthesizers from 1990 and 1991, running as NVDA voices —
+Three Hungarian speech synthesizers from 1990 and 1991, running as NVDA voices —
 not reimplemented, not sampled. The original 16-bit DOS programs execute
 instruction by instruction under the Unicorn CPU emulator, inside NVDA's own
 process. No DOSBox, no external program, no DOS.
@@ -9,15 +9,22 @@ process. No DOSBox, no external program, no DOS.
 >
 > — Király József
 
-## The two voices
+## The three voices
 
-**SPEAKER 1.0 (1990) — PC speaker.** Built for a machine with no sound card at
+**READSPF (1990) — PC speaker.** *(default)* The earliest of the three, dated
+18 March 1990, and the build the author's own `READSPF.ASM` describes. It reads
+standard input directly and speaks numbers by itself, so it needs none of the
+workarounds the 1991 build requires. This is the version `READDEMO.BAT` was
+always written for; the binary archived in the 1992 package was a different,
+later one, which is why that batch file appeared not to work. The author found
+this copy on 10 August 2026.
+
+**SPEAKER 1.0 (1991) — PC speaker.** Built for a machine with no sound card at
 all: amplitude becomes pulse width on channel 2 of the 8253 timer, at 18356 Hz.
 Never commercially released. The program that runs is the original
 `OLVASSP.EXE`; its banner reads *PC-TALKER Beszédszintetizátor / SPEAKER_ v.
 1.0*, Copyright 1990, and the recordings it is assembled from are dated 1989.
-This is the default voice — it is the cleaner of the two, having no smoothing
-stage between speech elements and therefore no echo.
+No smoothing stage between speech elements, and therefore no echo.
 
 **PC-TALKER 5.01 (1991) — Sound Blaster.** Run from a memory image of the
 resident driver, called through its `INT F1h` entry point. Slightly warmer,
@@ -37,8 +44,8 @@ NVDA, and pick PC-TALKER in the synthesizer list.
 
 ## How it works
 
-The two engines are built completely differently, and the driver knows about
-neither: `engines.py` presents them behind one interface, so audio arrives as
+The engines are built completely differently, and the driver knows about none
+of them: `engines.py` presents them behind one interface, so audio arrives as
 8-bit samples with a rate attached.
 
 ```

@@ -6,7 +6,7 @@ ADDON = os.path.join(ROOT, "addon")
 ENGDIR = os.path.join(ADDON, "synthDrivers", "_pctalker_engine")
 LIB = os.path.join(ENGDIR, "lib")
 UNICORN_SRC = r"C:\Python313\Lib\site-packages\unicorn"
-VERSION = "2.1.0"
+VERSION = "2.2.0"
 
 # --- engine image ---------------------------------------------------------
 shutil.copy2(os.path.join(ROOT, "engine.bin"), os.path.join(ENGDIR, "engine.bin"))
