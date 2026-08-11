@@ -47,7 +47,9 @@ OUT_RATE = 22050
 
 class SynthDriver(SynthDriver):
     name = "pctalker"
-    description = "PC-TALKER (Kiraly Jozsef, 1990-1991)"
+    #: Kiraly Jozsef asked, 2026-08-11, that the synthesizer list show
+    #: "- Hungarian -" here rather than his name.
+    description = "PC-TALKER - Hungarian -"
 
     # NOTE: the reverb setting is deliberately NOT exposed yet.  `#vnnnn` is
     # documented in the 1991 manual under OLVAS, and it is not established that

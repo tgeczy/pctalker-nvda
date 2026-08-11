@@ -478,7 +478,11 @@ class StdinEngine(object):
             return b""
         # CR ends the line and Ctrl-Z ends the input: what DOS delivered from a
         # redirected file, and what this program waits for before it stops.
-        host = _Host(self.work, raw + b"\r" + b"\n" + b"\x1a")
+        # CR alone ends the line.  A trailing LF makes this program speak
+        # the line a SECOND time -- 15062 samples where 8963 are right, which
+        # is audible as every sound doubled.  DOS hands a redirected text file
+        # CR+LF, but only the CR belongs here.
+        host = _Host(self.work, raw + b"\r" + b"\x1a")
         host.start(self.exe)
         host.pump(host.uc.reg_read(UC_X86_REG_CS) * 16
                   + host.uc.reg_read(UC_X86_REG_IP),
