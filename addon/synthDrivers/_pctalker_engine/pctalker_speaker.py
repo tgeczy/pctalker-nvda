@@ -88,6 +88,13 @@ class _Host(DosHost):
         self.pwm = bytearray()
         self.ch0_divisor = 0
         self._ch0_latch = []
+        #: Is channel 2 currently programmed LSB-only?  That is the PWM mode
+        #: (control byte 92h), where one byte written to 42h is one sample.
+        #: On the way out these programs restore the BIOS beep setup with
+        #: control byte B6h and write a two-byte divisor (0533h) instead --
+        #: which is not audio, and lands as two loud pops at the end of every
+        #: utterance if it is captured as though it were.
+        self._ch2_pwm = True
         self._ivt_seen = set()
         self.halts = 0
         #: Set if the run ended because emulation kept stopping for reasons
@@ -118,9 +125,11 @@ class _Host(DosHost):
 
     def _on_out(self, uc, port, size, value, user):
         if port == 0x42:
-            # One write, one PWM sample.  This is the hot path: nothing else
+            # One write, one PWM sample -- but only while channel 2 is in the
+            # LSB-only mode the PWM uses.  This is the hot path: nothing else
             # may happen here.
-            self.pwm.append(value & 0xFF)
+            if self._ch2_pwm:
+                self.pwm.append(value & 0xFF)
             return
         if port == 0x40:
             self._ch0_latch.append(value & 0xFF)
@@ -128,8 +137,12 @@ class _Host(DosHost):
                 self.ch0_divisor = (self._ch0_latch[0]
                                     | (self._ch0_latch[1] << 8))
                 del self._ch0_latch[:]
-        elif port == 0x43 and (value >> 6) == 0:
-            del self._ch0_latch[:]
+        elif port == 0x43:
+            sc = (value >> 6) & 3
+            if sc == 0:
+                del self._ch0_latch[:]
+            elif sc == 2:
+                self._ch2_pwm = ((value >> 4) & 3) == 1      # RW = LSB only
         super()._on_out(uc, port, size, value, user)
 
     # -- standard input ----------------------------------------------------
