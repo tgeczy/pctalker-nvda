@@ -142,7 +142,13 @@ class _Host(DosHost):
             if sc == 0:
                 del self._ch0_latch[:]
             elif sc == 2:
-                self._ch2_pwm = ((value >> 4) & 3) == 1      # RW = LSB only
+                # Only mode 3 -- square wave -- means "this is the BIOS beep
+                # again", which is what the exit path restores before writing
+                # the 0533h divisor.  Gating on the access mode instead was too
+                # broad: these programs reprogram channel 2 during playback,
+                # and dropping those samples shortens the audio, which at a
+                # fixed output rate sounds squashed and high.
+                self._ch2_pwm = ((value >> 1) & 7) != 3
         super()._on_out(uc, port, size, value, user)
 
     # -- standard input ----------------------------------------------------
@@ -396,6 +402,11 @@ class Engine(object):
         uc.mem_write(0, self._mem)
         _load_regs(uc, self._regs)
         host.pwm = bytearray()
+        # Host state is NOT part of the memory snapshot, so anything the last
+        # utterance left behind has to be cleared by hand.  Leaving the PWM
+        # gate off meant every later utterance lost samples and came out short
+        # and high-pitched.
+        host._ch2_pwm = True
         host.stalled = False
         host.exited = None
         host._pending_irq = None
