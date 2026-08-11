@@ -1,0 +1,22 @@
+# The clear boundary: none of Kiraly Jozsef's own files live in this
+# repository -- not the programs, not the memory image, not the speech data.
+# They ship inside the released .nvda-addon and are archived in full at
+# the Internet Archive.  See the README for where to get them.
+addon/synthDrivers/_pctalker_engine/OLVASSP.EXE
+addon/synthDrivers/_pctalker_engine/engine.bin
+engine.bin
+original/
+
+# Bundled at build time by tools/build_addon.py, straight from site-packages.
+# Roughly 3 MB of unicorn.dll that we do not maintain and should not vendor.
+addon/synthDrivers/_pctalker_engine/lib/
+
+# Built packages go to Releases, not into the tree.
+*.nvda-addon
+
+# Scratch: capture rigs, rendered wavs, DOSBox working copies.
+work/
+
+__pycache__/
+*.pyc
+*.pyo

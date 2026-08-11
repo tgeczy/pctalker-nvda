@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head><meta charset="utf-8"><title>PC-TALKER NVDA-bővítmény</title></head>
+<body>
+
+<h1>PC-TALKER NVDA-bővítmény</h1>
+
+<p>Ez a bővítmény a <strong>PC-TALKER 5.01</strong>-gyel beszél: azzal a magyar
+beszédszintetizátorral, amelyet <strong>Király József</strong> írt, és amely 1991-ben
+jelent meg. Ez a Sound Blaster változat; a programot annak idején a Technorecord, a
+Műszertechnika, majd az SZKI Recognita Rt. forgalmazta.</p>
+
+<p>A hang nem utánzat és nem újraírt motor: <strong>az eredeti 1991-es program fut</strong>,
+utasításról utasításra, az NVDA-n belül. A beszédelemeket Király József 1987-ben a
+<em>saját hangjáról</em> készült, 8 kHz-es felvételekből vágta ki, tehát az itt hallható
+hang az övé.</p>
+
+<h2>K&eacute;t hang</h2>
+<p>A 2.0-s v&aacute;ltozat egy m&aacute;sodik motort is tartalmaz. Mindkett&#337;
+kiv&aacute;laszthat&oacute; az NVDA <strong>hang</strong> list&aacute;j&aacute;ban,
+&eacute;s mindkett&#337; Kir&aacute;ly J&oacute;zsef saj&aacute;t programja, utas&iacute;t&aacute;sr&oacute;l
+utas&iacute;t&aacute;sra futtatva &mdash; DOSBox n&eacute;lk&uuml;l, k&uuml;ls&#337; program n&eacute;lk&uuml;l.</p>
+<dl>
+<dt><strong>SPEAKER 1.0 (1990) &mdash; PC-hangsz&oacute;r&oacute;</strong> (alap&eacute;rtelmezett)</dt>
+<dd>Az a v&aacute;ltozat, amelyhez semmilyen hangk&aacute;rtya nem kell: az
+amplit&uacute;d&oacute; impulzussz&eacute;less&eacute;gg&eacute; v&aacute;lik a 8253
+id&#337;z&iacute;t&#337; 2-es csatorn&aacute;j&aacute;n, 18356&nbsp;Hz-en. F&uuml;lre ez a
+tisztább a kett&#337; k&ouml;z&uuml;l, mert nincs benne a beszédelemeket
+&ouml;sszesim&iacute;t&oacute; fokozat, &iacute;gy visszhang sem. Az eredeti
+<code>OLVASSP.EXE</code> fut, 1991. janu&aacute;r 27-i d&aacute;tummal; a c&iacute;mk&eacute;pe
+<em>PC-TALKER Besz&eacute;dszintetiz&aacute;tor / SPEAKER_ v. 1.0</em>, Copyright 1990,
+a felv&eacute;telek pedig 1989-esek. Kereskedelmi forgalomba soha nem ker&uuml;lt.</dd>
+<dt><strong>PC-TALKER 5.01 (1991) &mdash; Sound Blaster</strong></dt>
+<dd>Az al&aacute;bb le&iacute;rt v&aacute;ltozat, a rezidens meghajt&oacute;
+mem&oacute;riak&eacute;p&eacute;b&#337;l futtatva. Kicsit melegebb hangz&aacute;s&uacute;, halv&aacute;ny
+term&eacute;szetes visszhanggal, ami az elemeket &ouml;sszesim&iacute;t&oacute; fokozatb&oacute;l ered.</dd>
+</dl>
+<p>Visszhangszab&aacute;lyz&oacute; nincs. Az 1991-es k&eacute;zik&ouml;nyv le&iacute;r egy
+<code>#vnnnn</code> parancsot, &eacute;s az val&oacute;ban v&aacute;ltoztat a hangon &mdash;
+de csak <em>hozz&aacute;ad</em> a m&aacute;r megl&eacute;v&#337; visszhanghoz, elvenni bel&#337;le
+nem tud. Ez&eacute;rt a SPEAKER az alap&eacute;rtelmezett.</p>
+
+<h2>Hogyan működik?</h2>
+
+<ol>
+<li><strong>Memóriakép.</strong> DOSBox-ban betöltjük az <code>OLVRES</code> rezidens
+programot, egyszer kimondatunk vele egy sort (hogy minden inicializálás megtörténjen),
+majd kimentjük a teljes 640 KB-os alapmemóriát egy fájlba (<code>engine.bin</code>).
+Ebben a képben a TSR már bent ül a memóriában, készen arra, hogy megszólítsák.</li>
+
+<li><strong>Emuláció.</strong> A bővítmény ezt a memóriaképet a <strong>Unicorn</strong>
+processzoremulátorral futtatja, 16 bites valós módban, az NVDA saját folyamatán belül.
+Nincs szükség DOSBox-ra, DOS-ra, sem külső programra. A kép a 0-s lineáris címre kerül,
+így minden benne lévő távoli mutató érvényes marad.</li>
+
+<li><strong>Hívás.</strong> Az NVDA pontosan úgy szólítja meg a motort, ahogyan annak
+idején az <code>OLVIT</code> tette. Az <strong>INT F1h</strong> vektort magából a
+memóriaképből olvassuk ki, majd:
+<blockquote><code>AH = 0</code> &nbsp;&nbsp; <code>ES:DI</code> → a szöveg &nbsp;&nbsp;
+<code>CX</code> = hossz &nbsp;&nbsp; <code>INT F1h</code></blockquote>
+A motor a szöveget átmásolja a saját adatszegmensébe, és 255 karakternél levágja, ezért
+a bővítmény ennél rövidebb darabokra bontja a szöveget.</li>
+
+<li><strong>Hangkimenet.</strong> Az <code>AH = 0</code> hívás nem szintetizál: beállítja
+a feladatot, átprogramozza a <strong>0-s PIT csatornát</strong>, és visszatér. A hangot
+ezután az <strong>INT 8 időzítő-megszakítás</strong> állítja elő, ütemenként egyetlen
+bájtot írva a Sound Blaster közvetlen D/A kimenetére (DSP <code>10h</code> parancs).
+DMA-t a motor egyáltalán nem használ. A bővítmény ezért ciklusban hívogatja az INT 8
+kezelőt, és összegyűjti a kiírt mintákat.</li>
+
+<li><strong>Mintavételi frekvencia.</strong> Ezt nem kellett kitalálni: a
+<code>40h</code> portra írt osztó adja meg. 1193181,666 / 130 =
+<strong>9178 Hz</strong>. A bővítmény ezt 22050 Hz-re mintavételezi át az NVDA
+hangkimenetéhez.</li>
+</ol>
+
+<p>Egy mondat kirajzolása nagyjából ötször gyorsabb a valós időnél, és az első minta már
+az első időzítő-ütemre megjelenik, ezért a beszéd késleltetés nélkül indul.</p>
+
+<h2>Beállítások</h2>
+<ul>
+<li><strong>Sebesség.</strong> A motorban nincs sebességszabályzó — az
+<code>AH = 1..4</code> funkciók leállítás, folytatás, időzítő-visszaállítás és
+lekérdezés —, ezért a sebességet újramintavételezéssel valósítjuk meg. A hangmagasság
+együtt mozog vele, mint a magnó sebességszabályzójánál. Az <strong>50-es középállás
+pontosan az eredeti hangzást adja.</strong></li>
+<li><strong>Hangerő.</strong> A kimenetre alkalmazva.</li>
+</ul>
+
+<h2>A csomag felépítése</h2>
+<p>Az NVDA-bővítmények valójában közönséges <strong>ZIP-csomagok</strong>. Ha nincs
+telepítve NVDA, elég a fájl kiterjesztését <code>.zip</code>-re átnevezni, és bármelyik
+tömörítőprogram megnyitja. Belül:</p>
+<ul>
+<li><code>manifest.ini</code> — a bővítmény adatai</li>
+<li><code>synthDrivers/pctalker.py</code> — az NVDA-illesztő</li>
+<li><code>synthDrivers/_pctalker_engine/pctalker_core.py</code> — az emulációs mag</li>
+<li><code>synthDrivers/_pctalker_engine/engine.bin</code> — a 640 KB-os memóriakép</li>
+<li><code>synthDrivers/_pctalker_engine/lib/unicorn/</code> — a Unicorn emulátor</li>
+</ul>
+
+<h2>Köszönet</h2>
+<p>A PC-TALKER <strong>Király József</strong> munkája. A közreadás az ő kifejezett
+engedélyével történt (2026. augusztus). Az NVDA-illesztőprogramot Géczy Tamás írta.</p>
+<p>Az emulációs megközelítés a Dr. Sbaitso / SmoothTalker bővítmény nyomán készült,
+amely megmutatta, hogy egy rezidens DOS-os beszédmotor Unicorn alatt is meghajtható.</p>
+
+</body>
+</html>

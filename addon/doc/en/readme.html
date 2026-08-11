@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>PC-TALKER for NVDA</title></head>
+<body>
+
+<h1>PC-TALKER for NVDA</h1>
+
+<p>This add-on speaks with <strong>PC-TALKER 5.01</strong>, the Hungarian speech
+synthesizer written by <strong>Kir&aacute;ly J&oacute;zsef</strong> and released in
+1991. This is the Sound Blaster version; the program was distributed at the time by
+Technorecord, M&#369;szertechnika, and later SZKI Recognita Rt.</p>
+
+<p>The voice is not an imitation and not a reimplementation: <strong>the original 1991
+program runs</strong>, instruction by instruction, inside NVDA. Its speech elements were
+cut from 8&nbsp;kHz recordings of Kir&aacute;ly J&oacute;zsef's <em>own voice</em>, made
+in 1987, so the voice you hear is his.</p>
+
+<h2>Two voices</h2>
+<p>Version 2.0 adds a second engine. Both are selectable in NVDA's
+<strong>voice</strong> list, and both are Kir&aacute;ly J&oacute;zsef's own
+software running instruction by instruction &mdash; no DOSBox, no external
+program.</p>
+<dl>
+<dt><strong>SPEAKER 1.0 (1990) &mdash; PC speaker</strong> (default)</dt>
+<dd>The build for a machine with no sound card at all. Amplitude becomes pulse
+width on channel 2 of the 8253 timer, at 18356&nbsp;Hz. It is the cleaner of the
+two by ear, because it has no smoothing stage joining its speech elements and
+therefore no echo. The program that runs here is the original
+<code>OLVASSP.EXE</code>, dated 27 January 1991; its banner reads
+<em>PC-TALKER Besz&eacute;dszintetiz&aacute;tor / SPEAKER_ v. 1.0</em>,
+Copyright 1990, and the recordings it is assembled from are dated 1989. It was
+never commercially released.</dd>
+<dt><strong>PC-TALKER 5.01 (1991) &mdash; Sound Blaster</strong></dt>
+<dd>The version described below, run from a memory image of the resident
+driver. Slightly warmer, with a faint room echo that comes from the stage that
+smooths between its concatenated voice elements.</dd>
+</dl>
+<p>There is no reverb control. The 1991 manual documents a <code>#vnnnn</code>
+command, and it does change the output &mdash; but it only ever <em>adds</em>
+delay on top of the echo that is already there, so no setting of it can produce
+a dry voice. That is why SPEAKER is the default.</p>
+
+<h2>How it works</h2>
+
+<ol>
+<li><strong>Memory image.</strong> The <code>OLVRES</code> resident program is loaded
+under DOSBox, made to speak one line so all initialisation has happened, and then the
+whole 640&nbsp;KB of conventional memory is dumped to a file
+(<code>engine.bin</code>). In that image the TSR is already resident and ready to be
+called.</li>
+
+<li><strong>Emulation.</strong> The add-on executes that image with the
+<strong>Unicorn</strong> CPU emulator, in 16-bit real mode, inside NVDA's own process.
+No DOSBox, no DOS, no external program. The image is mapped at linear address zero so
+every far pointer inside it stays valid.</li>
+
+<li><strong>Calling it.</strong> NVDA addresses the engine exactly as the original
+<code>OLVIT</code> utility did. The <strong>INT F1h</strong> vector is read out of the
+memory image itself, then:
+<blockquote><code>AH = 0</code> &nbsp;&nbsp; <code>ES:DI</code> &rarr; text &nbsp;&nbsp;
+<code>CX</code> = length &nbsp;&nbsp; <code>INT F1h</code></blockquote>
+The engine copies the text into its own data segment and clamps it at 255 characters,
+so the add-on splits longer text into smaller pieces.</li>
+
+<li><strong>Audio.</strong> The <code>AH = 0</code> call does not synthesize. It queues
+the utterance, reprograms <strong>PIT channel 0</strong>, and returns. The audio is then
+produced by the <strong>INT 8 timer interrupt</strong>, one byte per tick written to the
+Sound Blaster's direct DAC (DSP command <code>10h</code>). The engine uses no DMA at
+all. The add-on therefore pumps the INT 8 handler in a loop and collects the samples it
+writes.</li>
+
+<li><strong>Sample rate.</strong> This did not have to be guessed: the divisor written
+to port <code>40h</code> gives it. 1193181.666 / 130 = <strong>9178&nbsp;Hz</strong>,
+resampled to 22050&nbsp;Hz for NVDA's audio output.</li>
+</ol>
+
+<p>Rendering runs about five times faster than real time, and the first sample appears
+on the very first timer tick, so speech starts without delay.</p>
+
+<h2>Settings</h2>
+<ul>
+<li><strong>Rate.</strong> The engine has no speed control of its own &mdash;
+<code>AH = 1..4</code> are stop, continue, restore-timer and query &mdash; so rate is
+applied by resampling. Pitch moves with it, like the speed control on a tape machine.
+<strong>The midpoint, 50, reproduces the engine exactly.</strong></li>
+<li><strong>Volume.</strong> Applied to the output.</li>
+</ul>
+
+<h2>What is inside the package</h2>
+<p>NVDA add-ons are ordinary <strong>ZIP archives</strong>. With no NVDA installed, just
+rename the file to <code>.zip</code> and any archiver will open it. Inside:</p>
+<ul>
+<li><code>manifest.ini</code> &mdash; add-on metadata</li>
+<li><code>synthDrivers/pctalker.py</code> &mdash; the NVDA driver</li>
+<li><code>synthDrivers/_pctalker_engine/pctalker_core.py</code> &mdash; the emulation core</li>
+<li><code>synthDrivers/_pctalker_engine/engine.bin</code> &mdash; the 640&nbsp;KB memory image</li>
+<li><code>synthDrivers/_pctalker_engine/lib/unicorn/</code> &mdash; the Unicorn emulator</li>
+</ul>
+
+<h2>Credits</h2>
+<p>PC-TALKER is the work of <strong>Kir&aacute;ly J&oacute;zsef</strong>. It is included
+here with his express permission (August 2026). The NVDA driver was written by
+G&eacute;czy Tam&aacute;s.</p>
+<p>The emulation approach follows the Dr.&nbsp;Sbaitso / SmoothTalker add-on, which
+demonstrated that a resident DOS speech engine can be driven under Unicorn.</p>
+
+</body>
+</html>
