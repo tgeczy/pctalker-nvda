@@ -72,8 +72,15 @@ class Voice(object):
         return pctalker_audio.encode(text, self.encoding)
 
     def preprocess(self, text):
-        """Last chance to rewrite text into something the engine can say."""
-        return text
+        """Last chance to rewrite text into something the engine can say.
+
+        All three of these are word readers, so a bare consonant produces
+        nothing (or, on 5.01, the wrong thing -- its exception dictionary reads
+        `t` as *tonna*).  NVDA sends single characters constantly, so every
+        voice gets Hungarian letter names.
+        """
+        import pctalker_hulet
+        return pctalker_hulet.expand(text)
 
     def to_pcm16(self, pcm8):
         return pctalker_audio.to_pcm16(pcm8, self.pcm_zero, self.pcm_shift)
@@ -144,7 +151,7 @@ class Speaker10(Voice):
         handling in 1991.
         """
         import pctalker_hunum
-        return pctalker_hunum.expand(text)
+        return pctalker_hunum.expand(super(Speaker10, self).preprocess(text))
 
     def speak(self, text, on_block, should_cancel=None):
         engine = self.engine
