@@ -68,12 +68,21 @@ class EdgeTrimmer(object):
     #: real silence give the waveform somewhere to start from.
     LEAD_IN = 55
 
+    #: Length of the fade applied to the first sound of an utterance, in
+    #: samples at 18356 Hz -- about 2 ms.  Keeping a little silence is not
+    #: enough on its own: if the utterance opens on a plosive the waveform
+    #: still jumps from nothing to full amplitude in one sample, and that step
+    #: is heard as a chop partway into the word.  Ramping in removes the step
+    #: without softening anything audible; 2 ms is far below a syllable.
+    FADE_IN = 36
+
     def __init__(self, zero=128, tol=2):
         self.zero = zero
         self.tol = tol
         self.started = False
         self.pending = bytearray()
         self.leadin = bytearray()
+        self.faded = 0
 
     def feed(self, pcm8):
         out = bytearray()
@@ -98,7 +107,22 @@ class EdgeTrimmer(object):
                     out += self.pending
                     del self.pending[:]
                 out.append(b)
-        return bytes(out)
+        return self._fade(out)
+
+    def _fade(self, buf):
+        """Ramp the opening samples up from silence, once per utterance."""
+        n = self.FADE_IN
+        if self.faded >= n or not buf:
+            return bytes(buf)
+        zero = self.zero
+        done = self.faded
+        for i in range(len(buf)):
+            if done >= n:
+                break
+            buf[i] = int(zero + (buf[i] - zero) * (done / float(n)))
+            done += 1
+        self.faded = done
+        return bytes(buf)
 
 
 class Resampler(object):
