@@ -85,6 +85,16 @@ class Voice(object):
     def to_pcm16(self, pcm8):
         return pctalker_audio.to_pcm16(pcm8, self.pcm_zero, self.pcm_shift)
 
+    def _trimmed(self, on_block):
+        """Wrap a block sink so the padding around each utterance is dropped."""
+        trimmer = pctalker_audio.EdgeTrimmer(self.pcm_zero)
+
+        def sink(pcm8, rate):
+            data = trimmer.feed(pcm8)
+            if data:
+                on_block(data, rate)
+        return sink
+
     def speak(self, text, on_block, should_cancel=None):
         """Synthesize `text`, calling `on_block(pcm8, rate)` as audio appears."""
         raise NotImplementedError
@@ -111,7 +121,7 @@ class PCTalker501(Voice):
         return pctalker_core.Engine(os.path.join(_HERE, "engine.bin"))
 
     def speak(self, text, on_block, should_cancel=None):
-        self.engine.speak(self.encode(text), on_block=on_block,
+        self.engine.speak(self.encode(text), on_block=self._trimmed(on_block),
                           should_cancel=should_cancel)
 
 
@@ -156,7 +166,8 @@ class Speaker10(Voice):
     def speak(self, text, on_block, should_cancel=None):
         engine = self.engine
         rate = engine.rate
-        engine.speak(self.encode(text), on_block=lambda pcm8: on_block(pcm8, rate),
+        sink = self._trimmed(on_block)
+        engine.speak(self.encode(text), on_block=lambda pcm8: sink(pcm8, rate),
                      should_cancel=should_cancel)
 
 
@@ -187,8 +198,9 @@ class Readspf1990(Voice):
     def speak(self, text, on_block, should_cancel=None):
         engine = self.engine
         rate = engine.rate
+        sink = self._trimmed(on_block)
         engine.speak(self.encode(text),
-                     on_block=lambda pcm8: on_block(pcm8, rate),
+                     on_block=lambda pcm8: sink(pcm8, rate),
                      should_cancel=should_cancel)
 
 

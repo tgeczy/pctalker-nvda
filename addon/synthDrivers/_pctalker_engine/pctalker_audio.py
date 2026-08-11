@@ -45,6 +45,47 @@ def apply_gain(data, gain):
                        *[max(-32768, min(32767, int(v * gain))) for v in vals])
 
 
+class EdgeTrimmer(object):
+    """Drop the silence an engine emits before and after an utterance.
+
+    Every one of these programs pads: about 63 ms of dead air before the first
+    sound, and READSPF another 49 ms after the last.  On its own that is
+    nothing, but NVDA speaks in short bursts -- a word, a line, a character --
+    and paying it on every burst is what makes continuous reading sound broken
+    up.
+
+    Silence INSIDE the utterance is kept: those are the pauses the synthesizer
+    put there on purpose.  Only the run at the very start and the run still
+    outstanding at the end are removed, which is why quiet samples are held
+    back rather than dropped -- if speech follows them they were a real pause,
+    and they get emitted after all.
+    """
+
+    def __init__(self, zero=128, tol=2):
+        self.zero = zero
+        self.tol = tol
+        self.started = False
+        self.pending = bytearray()
+
+    def feed(self, pcm8):
+        out = bytearray()
+        zero, tol = self.zero, self.tol
+        for b in pcm8:
+            quiet = -tol <= b - zero <= tol
+            if not self.started:
+                if quiet:
+                    continue
+                self.started = True
+            if quiet:
+                self.pending.append(b)
+            else:
+                if self.pending:
+                    out += self.pending
+                    del self.pending[:]
+                out.append(b)
+        return bytes(out)
+
+
 class Resampler(object):
     """Streaming linear resampler for 16-bit mono.
 
