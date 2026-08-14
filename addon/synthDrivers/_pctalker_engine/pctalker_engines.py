@@ -19,6 +19,22 @@ import pctalker_audio
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
+#: Corner frequencies of the PC speaker cone model, in Hz, as (lowpass,
+#: highpass).  Both speaker voices share it because it describes the HARDWARE,
+#: not the engine -- the same little speaker played all of these.  A highpass of
+#: 0 disables that stage.  See pctalker_audio.SpeakerCone for why this exists.
+#:
+#: Chosen by ear from six candidates, 2026-08-13: the one that sounded like a
+#: speaker CONE rather than merely less harsh.  The high-pass is what does that
+#: -- a two-inch cone in a plastic can has no bass, and leaving it out left the
+#: voice a body the original never had.  It costs about 5 dB, but 5.01 turns out
+#: to be a quiet engine (speech RMS 3917 against 5115 here), so these still land
+#: about 2 dB above it and switching voices does not jump.
+#:
+#: 4200 Hz cuts the worst sample-to-sample jump from 192% of full scale to 112%
+#: (tools/cone_measure.py).  0.82 is headroom, not taste -- see SpeakerCone.
+SPEAKER_CONE = (4200.0, 400.0, 0.82)
+
 
 class EngineError(RuntimeError):
     pass
@@ -43,6 +59,11 @@ class Voice(object):
     #: to fill 16 bits.  Getting it wrong is a DC offset, heard as a click.
     pcm_zero = 128
     pcm_shift = 8
+    #: Response of the thing this engine actually drove, as (lowpass, highpass)
+    #: in Hz, or None for a voice that went through a real DAC.  See
+    #: pctalker_audio.SpeakerCone -- reproducing the captured bytes exactly is
+    #: the less faithful choice for a voice that came out of a PC speaker.
+    cone = None
 
     def __init__(self):
         self._engine = None
@@ -84,6 +105,17 @@ class Voice(object):
 
     def to_pcm16(self, pcm8):
         return pctalker_audio.to_pcm16(pcm8, self.pcm_zero, self.pcm_shift)
+
+    def make_filter(self, rate):
+        """A per-utterance output filter for this voice, or None.
+
+        Built per utterance rather than per voice because it carries state:
+        one shared filter would leak the tail of one utterance into the head
+        of the next.  The rate is not known until the first block arrives.
+        """
+        if not self.cone:
+            return None
+        return pctalker_audio.SpeakerCone(rate, *self.cone)
 
     def _trimmed(self, on_block):
         """Wrap a block sink so the padding around each utterance is dropped."""
@@ -145,6 +177,8 @@ class Speaker10(Voice):
     #: stream is 7-bit centred on 64.
     pcm_zero = 64
     pcm_shift = 9
+    #: It came out of the PC speaker, so it is filtered like one.
+    cone = SPEAKER_CONE
 
     def available(self):
         return os.path.isfile(os.path.join(_HERE, "OLVASSP.EXE"))
@@ -187,6 +221,7 @@ class Readspf1990(Voice):
     encoding = "cwi2"
     pcm_zero = 64
     pcm_shift = 9
+    cone = SPEAKER_CONE
 
     def available(self):
         return os.path.isfile(os.path.join(_HERE, "READSPF.EXE"))
@@ -208,11 +243,14 @@ class Readspf1990(Voice):
 #: 18 Mar 1990 -> 27 Jan 1991 -> 1991 Sound Blaster.
 VOICES = (Readspf1990, Speaker10, PCTalker501)
 
-#: The 1990 reader is the default: cleanest of the three, and the only one
-#: needing none of this add-on's workarounds -- it reads its own text and says
-#: its own numbers.  Stated rather than inferred from dict order, because it is
-#: the most user-visible decision here.
-DEFAULT_VOICE = Readspf1990.id
+#: The Sound Blaster build is the default, at the author's request (2026-08-11):
+#: on his machine the speaker voices still did not match what he remembers, and
+#: 5.01 is the one that reaches a new user sounding the way it should.  The other
+#: two stay in the list -- he asked for them to be withdrawn while the speaker
+#: output was wrong, not removed, and the cone model above is that fix.
+#: Stated rather than inferred from dict order, because it is the most
+#: user-visible decision in this file.
+DEFAULT_VOICE = PCTalker501.id
 
 
 def default_voice(registry):

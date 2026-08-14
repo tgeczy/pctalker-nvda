@@ -6,7 +6,7 @@ ADDON = os.path.join(ROOT, "addon")
 ENGDIR = os.path.join(ADDON, "synthDrivers", "_pctalker_engine")
 LIB = os.path.join(ENGDIR, "lib")
 UNICORN_SRC = r"C:\Python313\Lib\site-packages\unicorn"
-VERSION = "2.5.0"
+VERSION = "2.6.0"
 
 # --- engine image ---------------------------------------------------------
 shutil.copy2(os.path.join(ROOT, "engine.bin"), os.path.join(ENGDIR, "engine.bin"))
@@ -46,11 +46,13 @@ description = \"\"\"Három magyar beszédszintetizátor Király Józseftől, az 
 
 Hangként választható, a keletkezésük sorrendjében:
 
-READSPF (1990) — a legkorábbi változat, PC-hangszóróra. Közvetlenül a standard inputról olvas, és a számokat magától kimondja. Ez az alapértelmezett hang.
+READSPF (1990) — a legkorábbi változat, PC-hangszóróra. Közvetlenül a standard inputról olvas, és a számokat magától kimondja.
 
 SPEAKER 1.0 (1991) — szintén PC-hangszórós, hangkártya nélkül: az amplitúdó impulzusszélességgé válik a 8253 időzítő 2-es csatornáján. Kereskedelmi forgalomba soha nem került.
 
-PC-TALKER 5.01 (1991) — a Sound Blaster-es változat, a rezidens meghajtó memóriaképéből futtatva. Ebben halvány térhatás hallható, ami a beszédelemeket összesimító fokozatból ered; a két hangszórós változat ezért tisztább hangzású.
+PC-TALKER 5.01 (1991) — a Sound Blaster-es változat, a rezidens meghajtó memóriaképéből futtatva. Ebben halvány térhatás hallható, ami a beszédelemeket összesimító fokozatból ered. Ez az alapértelmezett hang.
+
+A két hangszórós hang egy szűrőn megy át, amely a kis belső hangszóró viselkedését modellezi: 4200 Hz-es aluláteresztő és 400 Hz-es felüláteresztő. Egy valódi membránnak tömege van — nem tudta követni azokat az ugrásokat, amelyeket a mai hangkártya hibátlanul lejátszik, és mélye sem volt. A nyers minták visszaadása ezért nem hűbb, hanem kevésbé hű. A szerző döntése alapján, 2026 augusztusában.
 
 Király József 1987-ben kezdte a PC-TALKER-t, a beszédelemeket a saját hangjáról készült 8 kHz-es felvételekből vágta ki. 1988-ban mutatta be a budapesti vásáron, nyomtatóportra kötött átalakítóval. Forgalmazta a Technorecord, a Műszertechnika és az SZKI Recognita. A szerző kifejezett engedélyével, 2026 augusztusában.
 

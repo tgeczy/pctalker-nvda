@@ -251,7 +251,7 @@ class SynthDriver(SynthDriver):
             # chunk restarts its phase and drops the sample it was carrying,
             # which is a discontinuity -- and therefore a click -- at every
             # chunk boundary in the middle of a sentence.
-            state = {"resampler": None}
+            state = {"resampler": None, "cone": None}
             for piece in self._voice.split(value):
                 if self._cancelFlag.is_set():
                     return
@@ -267,13 +267,20 @@ class SynthDriver(SynthDriver):
             if state["resampler"] is None:
                 state["resampler"] = pctalker_audio.Resampler(
                     rate, OUT_RATE, self._speed)
+                # The cone models the speaker the engine drove, so it belongs at
+                # the engine's own rate -- before resampling, which is also the
+                # cheaper end.  Voices that drove a real DAC return None.
+                state["cone"] = voice.make_filter(rate)
             else:
                 # 5.01 reports a rate that moves during its first utterance,
                 # and resampling later blocks with the first block's ratio is
                 # heard as the pitch wobbling before it settles.
                 state["resampler"].set_source_rate(rate)
+            pcm16 = voice.to_pcm16(pcm8)
+            if state["cone"] is not None:
+                pcm16 = state["cone"].feed(pcm16)
             data = pctalker_audio.apply_gain(
-                state["resampler"].feed(voice.to_pcm16(pcm8)), gain)
+                state["resampler"].feed(pcm16), gain)
             if data:
                 self._player.feed(data)
 

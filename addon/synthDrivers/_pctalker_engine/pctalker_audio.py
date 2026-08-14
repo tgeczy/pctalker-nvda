@@ -8,6 +8,7 @@ Sound Blaster's direct DAC at 9178 Hz; SPEAKER 1.0 writes pulse widths to PIT
 channel 2 at 18356 Hz.  After this module they are indistinguishable.
 """
 
+import math
 import struct
 
 
@@ -123,6 +124,95 @@ class EdgeTrimmer(object):
             done += 1
         self.faded = done
         return bytes(buf)
+
+
+def _biquad(kind, rate, freq, q):
+    """RBJ cookbook coefficients, normalised, as (b0, b1, b2, a1, a2)."""
+    w0 = 2.0 * math.pi * (float(freq) / float(rate))
+    cw, alpha = math.cos(w0), math.sin(w0) / (2.0 * q)
+    if kind == "lp":
+        b0 = b2 = (1.0 - cw) / 2.0
+        b1 = 1.0 - cw
+    else:                                       # "hp"
+        b0 = b2 = (1.0 + cw) / 2.0
+        b1 = -(1.0 + cw)
+    a0, a1, a2 = 1.0 + alpha, -2.0 * cw, 1.0 - alpha
+    return (b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0)
+
+
+class SpeakerCone(object):
+    """The mechanical response of the little speaker these engines drove.
+
+    Kiraly's PC speaker builds do not write samples anywhere: they write pulse
+    WIDTHS to PIT channel 2 at 18356 Hz, and the sound is whatever a 2-inch
+    mylar cone in a plastic can makes of that.  We capture the duty cycle, which
+    is the signal the speaker was handed -- but not the signal anybody heard.
+    A cone has mass.  It cannot step from one rail to the other in 54
+    microseconds, and it has no bass at all below its own resonance.  In 1990
+    that limitation was the reconstruction filter, for free, and every recording
+    of this engine went through it.
+
+    Reproducing the captured bytes exactly is therefore the *less* faithful
+    choice: it reproduces edges no listener in 1990 could have heard, and those
+    edges are audible now as a click on affricates -- the `ty` in "kutya", where
+    the stream jumps 125 -> 2 between one sample and the next, both rails of a
+    0..127 range.  The author settled it when asked, on 2026-08-11:
+
+        mivel emulációról van szó, azt hiszem elfogadható az a megoldás
+        ami az eredeti hangminőséghez közelebbi megoldást ad, tehát figyelembe
+        veszi a kis belső hangszóró elsimító hatását is
+
+    -- since this is emulation, the acceptable solution is the one closer to the
+    original sound, so it should take the small internal speaker's smoothing
+    into account.
+
+    Two second-order sections, both optional: a low-pass for the cone's mass,
+    and a high-pass for the bass it could never produce.  PC-TALKER 5.01 gets
+    neither -- it drove a Sound Blaster's DAC through a real analogue
+    reconstruction filter, so its output is already what the listener heard.
+
+    Filtering happens before resampling, at the engine's own rate: that is where
+    the physical device sat, and it is the cheaper end besides.
+    """
+
+    def __init__(self, rate, lowpass=0.0, highpass=0.0, gain=1.0, q=0.707):
+        self.stages = []
+        self.gain = float(gain)
+        nyquist = rate / 2.0
+        if lowpass and lowpass < nyquist:
+            self.stages.append([_biquad("lp", rate, lowpass, q), 0.0, 0.0])
+        if highpass and highpass > 0:
+            self.stages.append([_biquad("hp", rate, highpass, q), 0.0, 0.0])
+        # `gain` is not a volume control -- it is headroom, and it is required.
+        # This stream already peaks at 31744 out of 32767, so there is none to
+        # spare, and a two-pole section RINGS on the full-scale steps this
+        # engine is made of: measured overshoot reaches 1.20x the input peak.
+        # Left at 1.0 the output clips against the clamp in feed(), which is
+        # distortion we would be adding rather than reproducing.  Folded into
+        # the first stage's numerator, so it costs nothing per sample.
+        if self.stages and self.gain != 1.0:
+            b0, b1, b2, a1, a2 = self.stages[0][0]
+            self.stages[0][0] = (b0 * self.gain, b1 * self.gain,
+                                 b2 * self.gain, a1, a2)
+
+    def feed(self, pcm16):
+        """Filter a block, carrying state so blocks join without a step."""
+        if not self.stages or not pcm16:
+            return pcm16
+        n = len(pcm16) // 2
+        vals = list(struct.unpack("<%dh" % n, pcm16))
+        for stage in self.stages:
+            (b0, b1, b2, a1, a2), s1, s2 = stage
+            for i in range(n):
+                x = vals[i]
+                y = b0 * x + s1
+                s1 = b1 * x - a1 * y + s2
+                s2 = b2 * x - a2 * y
+                vals[i] = y
+            stage[1], stage[2] = s1, s2
+        out = [-32768 if v < -32768 else (32767 if v > 32767 else int(v))
+               for v in vals]
+        return struct.pack("<%dh" % n, *out)
 
 
 class Resampler(object):
