@@ -3,6 +3,7 @@
 # They ship inside the released .nvda-addon and are archived in full at
 # the Internet Archive.  See the README for where to get them.
 addon/synthDrivers/_pctalker_engine/OLVASSP.EXE
+addon/synthDrivers/_pctalker_engine/READSPF.EXE
 addon/synthDrivers/_pctalker_engine/engine.bin
 engine.bin
 original/

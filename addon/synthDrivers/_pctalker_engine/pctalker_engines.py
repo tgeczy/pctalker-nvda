@@ -239,9 +239,28 @@ class Readspf1990(Voice):
                      should_cancel=should_cancel)
 
 
-#: Ordered by date, so the voice list reads as a lineage:
-#: 18 Mar 1990 -> 27 Jan 1991 -> 1991 Sound Blaster.
-VOICES = (Readspf1990, Speaker10, PCTalker501)
+#: WITHDRAWN, not removed, at the author's request on 2026-08-14.  He reported
+#: the two speaker voices as "nem folyamatos, szakadozo" -- not continuous,
+#: broken up -- and he is right.  Measured on one machine, warmed:
+#:
+#:     PC-TALKER 5.01   5.0x faster than real time, first block 22 ms
+#:     READSPF          1.7x                        first block 72 ms
+#:     SPEAKER 1.0      1.8x                        first block 72 ms
+#:
+#: A 1.7x margin does not survive a slower machine, a Say All, or any load:
+#: the player runs dry and speech breaks up.  5.01's 5x does.  The cause is
+#: structural rather than mysterious -- the speaker engines halt once per
+#: SAMPLE, so they make ~18356 round trips into Python per second of audio,
+#: twice the rate 5.01 needs and at a higher cost each.  The per-sample loop
+#: still does a ctypes mem_read to probe for HLT and two float divisions every
+#: iteration; all three are cacheable.
+#:
+#: The classes stay, the engines stay, tools/ still drives them.  Put them back
+#: in this tuple when the pump loop is fast enough to deserve it.
+_WITHDRAWN = (Readspf1990, Speaker10)
+
+#: Ordered by date, so the voice list reads as a lineage.
+VOICES = (PCTalker501,)
 
 #: The Sound Blaster build is the default, at the author's request (2026-08-11):
 #: on his machine the speaker voices still did not match what he remembers, and
