@@ -1,9 +1,10 @@
 # PC-TALKER for NVDA
 
-Three Hungarian speech synthesizers from 1990 and 1991, running as NVDA voices —
-not reimplemented, not sampled. The original 16-bit DOS programs execute
-instruction by instruction under the Unicorn CPU emulator, inside NVDA's own
-process. No DOSBox, no external program, no DOS.
+**Four** NVDA speech synthesizers for the Hungarian PC-TALKER, which **Király
+József** wrote between 1987 and 1991. Three of them he rewrote himself, in
+Python, in August 2026, and they are in [`kiraly/`](kiraly/). The fourth runs
+his original DOS programs under a CPU emulator, instruction by instruction,
+inside NVDA's own process — no DOSBox, no external program, no DOS.
 
 > PCTALKER verziókat én készítettem 1989 - 1991 között.
 >
@@ -11,33 +12,64 @@ process. No DOSBox, no external program, no DOS.
 
 ## Which one do you want?
 
-There are **four** PC-TALKER add-ons for NVDA, and they split cleanly in two.
+**Install one of his.** [`kiraly/`](kiraly/) holds the three editions as he
+rebuilt them — Printer, PC Speaker and Sound Blaster. They emulate nothing and
+answer instantly, which is what a screen reader needs. For nearly everyone these
+are the answer, and **Sound Blaster** is the one to start with: it is the last
+version he wrote, and the intonation work is in it.
 
-| | This repository | [**pctalker-python**](https://github.com/tgeczy/pctalker-python) |
+The emulated add-on stays beside them as the **reference**.
+
+| | [`kiraly/`](kiraly/) — his rewrites | the emulated add-on |
 |---|---|---|
-| What runs | the original 1990–91 DOS programs, emulated | Python, no emulation |
-| Who wrote it | the emulator: tgeczy. The engines: Király József | Király József, all of it |
-| Add-ons | one, with three voices | three, one per edition |
-| Speed | 5× real time on 5.01, 1.7× on the speaker voices | instant |
-| Use it to | ask what the original programs actually did | **read your screen** |
+| What runs | Python, ported from his own assembly | the original 1990–91 DOS programs |
+| Who wrote it | Király József, all of it | the emulator: tgeczy. The engines: his |
+| Packages | three, one per edition | one, with three voices |
+| Speed | instant | 5× real time on 5.01, 1.7× on the speaker voices |
+| Reach for it to | **read your screen** | ask what the original really did |
 
-**If you just want a Hungarian voice that works, install
-[pctalker-python](https://github.com/tgeczy/pctalker-python).** In August 2026
-the author rewrote all three editions himself, in Python, from his own assembly
-sources. They emulate nothing and answer instantly.
-
-This repository is the **reference build**. It is the only place the original
-binaries still run, which is what makes it worth keeping: his Sound Blaster
-rewrite was checked against the 1991 program running here — same echo, same
-pitch. In his own words:
+Calling one of them the reference is not a consolation prize. It is what proved
+the other right: his Sound Blaster rewrite was checked against the 1991 program
+running here, and it matched — same echo, same pitch. In his own words:
 
 > Az Ön által készített, az eredeti .exe fájlokat használó emuláció óriási érték,
 > az én verzióim sem lennének hitelesek ezek nélkül.
 
-It is also the only place `READSPF.EXE` runs at all: it is the one edition he did
-not rewrite.
+It is also the only place `READSPF.EXE` runs at all: the one edition he did not
+rewrite.
 
-## The three voices
+## Why it went this way
+
+He could have treated a stranger taking his 1991 code apart as an intrusion.
+He did the opposite. He took the interest as a reason to give the work a second
+life, and spent August 2026 rewriting all three editions as native code that
+runs anywhere Python does.
+
+That changes what survives. Hungarian speech synthesis of 1989–91 is no longer
+readable only as a disassembly or a 640 KB memory image; it is readable as
+source, and it still speaks. Anyone who later wants to study how speech was
+actually produced on these machines — how a whole language was cut out of five
+seconds of one man's voice, and how it was pushed through a beeper — now has
+something to read rather than something to excavate.
+
+So the emulator being superseded for daily use is the good outcome, not a
+grudging one. It did the job it was for: it got the originals running again,
+and it gave his rewrites something to be verified against.
+
+## His three add-ons
+
+See [`kiraly/README.md`](kiraly/README.md) for what each edition is, how they
+relate, and why they sound alike. The short version: they are not three
+alternatives but three milestones toward the last one, and each ships its own
+assembly source and parses it at run time — the `.ASM` is the data file, not
+documentation.
+
+Download them from
+[Releases](https://github.com/tgeczy/pctalker-nvda/releases) (tag
+`kiraly-2026.08.23`); the emulated add-on is released separately, under its own
+version.
+
+## The emulated add-on — three voices
 
 **READSPF (1990) — PC speaker.** The earliest of the three, dated
 18 March 1990, and the build the author's own `READSPF.ASM` describes. It reads
@@ -70,9 +102,17 @@ Technorecord, Microsystem Kft. (as Micro-Phone) and later SZKI Recognita.
 
 ## Install
 
-Download the `.nvda-addon` from
-[Releases](https://github.com/tgeczy/pctalker-nvda/releases), open it, restart
-NVDA, and pick PC-TALKER in the synthesizer list.
+Everything is on the
+[Releases](https://github.com/tgeczy/pctalker-nvda/releases) page. Download an
+`.nvda-addon`, open it, restart NVDA, and pick it in the synthesizer list.
+
+| Release | What it holds |
+|---|---|
+| `kiraly-2026.08.23` | his three native add-ons — **start here** |
+| `v2.8.0` and earlier | the emulated add-on, the reference build |
+
+They can all be installed at once; each appears separately in the synthesizer
+list and none of them conflict.
 
 ## How it works
 
@@ -104,9 +144,14 @@ the interrupt handler actually implements.
 
 ## What this repository does not contain
 
-None of Király József's own files live here — not the programs, not the memory
-image, not the speech data. Only the driver, the emulator and the research are
-in the tree. There are two places to get the rest:
+This applies to the **emulated** add-on only. None of the DOS-era files it runs
+live here — not the programs, not the memory image, not the speech data. Only
+the driver, the emulator and the research are in the tree.
+
+(`kiraly/` is the exception, and deliberately so: those are his own 2026 Python
+rewrites, published at his request, so they are tracked here in full.)
+
+There are two places to get the rest:
 
 - **The released add-on** already contains everything and needs nothing else.
   Download it from

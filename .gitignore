@@ -1,7 +1,14 @@
-# The clear boundary: none of Kiraly Jozsef's own files live in this
-# repository -- not the programs, not the memory image, not the speech data.
-# They ship inside the released .nvda-addon and are archived in full at
-# the Internet Archive.  See the README for where to get them.
+# The boundary, restated 2026-08-24.  It used to read "none of Kiraly Jozsef's
+# own files live in this repository".  That is still true of the EMULATED half:
+# the DOS programs, the memory image and the speech data they read stay out,
+# ship inside the released .nvda-addon, and are archived in full at the Internet
+# Archive.  See the README for where to get them.
+#
+# It is no longer true of kiraly/.  In August 2026 the author rewrote all three
+# editions in Python himself and asked that they be published -- "nyugodtan
+# felteheti oket" -- so his rewrites and the data they read are tracked here,
+# with his permission and under his name.  Publishing code he wrote to be
+# published is the opposite of the thing the old rule guarded against.
 addon/synthDrivers/_pctalker_engine/OLVASSP.EXE
 addon/synthDrivers/_pctalker_engine/READSPF.EXE
 addon/synthDrivers/_pctalker_engine/engine.bin
@@ -12,7 +19,7 @@ original/
 # Roughly 3 MB of unicorn.dll that we do not maintain and should not vendor.
 addon/synthDrivers/_pctalker_engine/lib/
 
-# Built packages go to Releases, not into the tree.
+# Built packages go to Releases, not into the tree -- ours and his alike.
 *.nvda-addon
 
 # Scratch: capture rigs, rendered wavs, DOSBox working copies.
