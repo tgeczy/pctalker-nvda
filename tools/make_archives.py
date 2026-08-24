@@ -30,6 +30,7 @@ import hashlib
 import io
 import os
 import sys
+import time
 import zipfile
 
 SRC = r"C:\git\pctalker-archive.zip"
@@ -37,6 +38,22 @@ OUT = r"C:\git\archive-build"
 
 CLEAN_NAME = "pctalker-archive.zip"
 FOSSIL_NAME = "DO-NOT-RUN-INFECTED--pctalker-archive-with-DiskKiller-fossil.zip"
+
+#: Added to BOTH archives, so the only difference between them stays the virus.
+#: Permission was given per group: the 1989 printer set on 2026-08-14, the two
+#: 1991 sources on 2026-08-19 ("Igen, az OLVAS_S.ASM es az OLVASSP.ASM fajlokat
+#: is feltoltheti az archivumba").  His Python ports themselves are his own
+#: current work and are covered by neither grant.
+#:
+#: (source directory, archive prefix, file names).  The printer set gets its own
+#: folder because it is a whole edition that survives only as source; the two
+#: 1991 files go to the root beside READSPF.ASM, because they are sources whose
+#: binaries are already here.
+EXTRA_GROUPS = (
+    (r"C:\pctalker-archive\PCTALKER_PRINTER_1989", "PCTALKER_PRINTER_1989/",
+     ("OLVAS_P.ASM", "RAWHUSR", "SZOTAR.TBL")),
+    (r"C:\pctalker-archive", "", ("OLVASSP.ASM", "OLVAS_S.ASM")),
+)
 
 #: Silence.  These recordings are 8-bit unsigned PCM centred on 128, and both
 #: boundaries already sit within a couple of counts of it, so the join is
@@ -117,6 +134,73 @@ def rebuild_nested(data, report):
             dst.writestr(out, payload)
     return buf.getvalue()
 
+
+#: Slotted into the CONTENTS list rather than only appended, so the list stays
+#: an accurate index of what is in the archive.
+CONTENTS_ANCHOR = ("  original-archives/       The two packages exactly as "
+                   "the author sent them.")
+CONTENTS_ADD = """  PCTALKER_PRINTER_1989/   The 1989 PRINTER PORT edition, contributed by the
+                           author in August 2026.  OLVAS_P.ASM is his assembly
+                           source, RAWHUSR the speech element bank it plays,
+                           and SZOTAR.TBL the exception dictionary as a
+                           standalone table.  No binary of this edition is
+                           known to survive; this source is what there is.
+"""
+
+PRINTER_NOTE = """
+
+The 1989 printer port edition
+-----------------------------
+
+PCTALKER_PRINTER_1989/ arrived thirty-seven years after it was written.  In
+August 2026 the author rewrote OLVAS_P.ASM into Python, so that PC-TALKER
+could run on a modern machine with no emulation at all, and sent the original
+assembly along with it.  These three files are that edition's complete source
+and data.  The file dates are from his 2026 packaging, not from 1989.
+
+It is the earliest PC-TALKER here and the only one with no surviving binary.
+Its output path is a D/A converter on the parallel port -- the arrangement
+demonstrated at the 1988 Budapest fair -- and the source documents its own
+sample rates:
+
+    timer1   db 05h     ;   4   kHz
+    timer2   db 73h     ;   8.5 kHz
+    timer3   db 9ch     ;  12   kHz
+
+chosen by a byte carried with the sound file, falling back to 8.5 kHz.  That
+is why this edition sits lower in pitch than the 1990-91 speaker and Sound
+Blaster builds, which run at 9178 Hz.  Both are correct for their own version.
+
+RAWHUSR and RAWSP are the SAME recordings: they correlate at 0.986 with no
+offset and differ by two bytes in length.  RAWSP is the speaker edition's
+copy, with its amplitudes and ratios adjusted by hand -- in the author's own
+account, because after pulse width modulation the beeper circuit and the
+speaker itself made that necessary.
+
+---
+
+Az 1989-es nyomtatoportos valtozat
+
+A PCTALKER_PRINTER_1989/ mappa harminchet evvel a keszitese utan kerult elo.
+2026 augusztusaban a szerzo atirta az OLVAS_P.ASM-et Pythonba, hogy a PCTALKER
+emulacio nelkul is fusson mai gepen, es elkuldte hozza az eredeti assembly
+forrast is.  Ez a harom fajl ennek a valtozatnak a teljes forrasa es adata.  A
+fajlok datuma a 2026-os csomagolasbol szarmazik, nem 1989-bol.
+
+Ez a legkorabbi itt szereplo PCTALKER, es az egyetlen, amelybol futtathato
+peldany nem maradt fenn.  A hangot a nyomtatoportra kotott D/A atalakito adta
+ki -- ez volt az 1988-as budapesti vasaron bemutatott megoldas -- es a forras
+maga rogziti a mintaveteli frekvenciakat: 4, 8,5 es 12 kHz, a hangfajllal
+erkezo bajt valasztja ki, alapertelmezesben 8,5 kHz.  Ezert szol ez a valtozat
+melyebben, mint az 1990-91-es hangszoros es Soundblaster-es epitesek, amelyek
+9178 Hz-en futnak.  Mindketto helyes a maga verziojahoz.
+
+A RAWHUSR es a RAWSP UGYANAZ a felvetel: 0,986-os korrelacioval fedik egymast,
+eltolas nelkul.  A RAWSP a hangszoros valtozat peldanya, kezzel igazitott
+amplitudokkal es aranyokkal -- a szerzo szavaival azert, mert a
+jelszelesseg-modulacio utan a beeper aramkor es a hangszoro sajatossagai ezt
+megkoveteltek.
+"""
 
 README_NOTE = """
 
@@ -243,6 +327,112 @@ vagy DEM2 tartalmat lemez inditoszektoraba.
 """
 
 
+#: Slotted beside READSPF.ASM rather than at the end, because OLVASSP.ASM is
+#: literally the same file at a later date and belongs next to it.
+CONTENTS_ANCHOR2 = ("  RAWSP                    The speech element bank of "
+                    "the speaker edition.")
+CONTENTS_ADD2 = """  OLVASSP.ASM              The SAME source as READSPF.ASM above, twenty
+                           months later: "Last update 91.jan.26".  This is the
+                           state OLVASSP.EXE was built from -- that binary is
+                           dated 27 January 1991, the day after.  Contributed
+                           by the author in August 2026.
+  OLVAS_S.ASM              The Sound Blaster edition's source: "olvas_s.asm,
+                           Last update 91.jan.13, hangfile = rawhusr".  The
+                           source of PC-TALKER 5.01.  Contributed by the
+                           author in August 2026.
+"""
+
+SOURCES_NOTE = """
+
+The two 1991 sources
+--------------------
+
+OLVASSP.ASM and OLVAS_S.ASM arrived in August 2026, alongside the three add-ons
+in which the author rewrote each edition into Python.  He gave permission to
+archive them on 19 August 2026.  As with the printer folder, the file dates are
+from his 2026 packaging; the dates that matter are the ones the sources state
+about themselves.
+
+With READSPF.ASM already here, the speaker edition is legible across its own
+lifetime.  READSPF.ASM and OLVASSP.ASM are the same program -- both headers
+call it OLvassp.asm -- caught twenty months apart:
+
+    READSPF.ASM   Last update 89.maj.26    builds READSPF.EXE, 18 Mar 1990
+    OLVASSP.ASM   Last update 91.jan.26    builds OLVASSP.EXE, 27 Jan 1991
+
+3,474 of their lines are identical -- 89 percent of the older file, 93 percent
+of the newer.  Diffing the two shows what the author changed between the 1990
+and the 1991 speaker builds, in his own hand.
+
+OLVAS_S.ASM is the other branch: the Sound Blaster edition, hangfile = rawhusr
+instead of rawsp, last updated 13 January 1991 -- the day before the date on
+PCTALKER_SB_Manual.DOC.  Its header still carries the name it forked from,
+OLvorauj.asm.
+
+---
+
+A ket 1991-es forras
+
+Az OLVASSP.ASM es az OLVAS_S.ASM 2026 augusztusaban kerult elo, azzal a harom
+bovitmennyel egyutt, amelyekben a szerzo mindharom valtozatot atirta Pythonba.
+Az archivalasukhoz 2026. augusztus 19-en jarult hozza.  A fajlok datuma itt is
+a 2026-os csomagolasbol valo; ami szamit, azt a forrasok maguk mondjak meg
+magukrol.
+
+A READSPF.ASM-mel egyutt a hangszoros valtozat mostantol a sajat elettartamaban
+olvashato.  A READSPF.ASM es az OLVASSP.ASM ugyanaz a program -- a fejlecukben
+mindketto OLvassp.asm --, husz honap kulonbseggel:
+
+    READSPF.ASM   Last update 89.maj.26    ebbol lett READSPF.EXE, 1990.03.18
+    OLVASSP.ASM   Last update 91.jan.26    ebbol lett OLVASSP.EXE, 1991.01.27
+
+3474 soruk azonos -- a regebbi fajl 89, az ujabb 93 szazaleka.  A kettot
+osszevetve az latszik, mit valtoztatott a szerzo az 1990-es es az 1991-es
+hangszoros valtozat kozott, a sajat kezevel.
+
+Az OLVAS_S.ASM a masik ag: a Sound Blaster-es valtozat, hangfile = rawhusr a
+rawsp helyett, utolso modositasa 1991. januar 13. -- egy nappal a
+PCTALKER_SB_Manual.DOC datuma elott.  A fejlece meg mindig azt a nevet viseli,
+amelyikbol kivalt: OLvorauj.asm.
+"""
+
+
+def patch_readme(data):
+    """Index the new folder in CONTENTS, then append both notes.
+
+    The README is deliberately plain ASCII, accents and all folded out, so it
+    stays readable on the DOS-era machines this material came from.  Anything
+    added here has to keep that.
+    """
+    text = data.decode("ascii")
+    if CONTENTS_ANCHOR not in text:
+        raise SystemExit("README.txt: CONTENTS anchor not found")
+    text = text.replace(CONTENTS_ANCHOR, CONTENTS_ADD + CONTENTS_ANCHOR, 1)
+    if CONTENTS_ANCHOR2 not in text:
+        raise SystemExit("README.txt: RAWSP anchor not found")
+    text = text.replace(CONTENTS_ANCHOR2, CONTENTS_ADD2 + CONTENTS_ANCHOR2, 1)
+    return (text.rstrip() + PRINTER_NOTE + SOURCES_NOTE
+            + README_NOTE).encode("ascii")
+
+
+def add_extras(dst):
+    """Write every contributed file into an open archive."""
+    added = []
+    for directory, prefix, names in EXTRA_GROUPS:
+        for name in names:
+            src = os.path.join(directory, name)
+            if not os.path.isfile(src):
+                raise SystemExit("missing contributed file: %s" % src)
+            info = zipfile.ZipInfo(
+                prefix + name,
+                date_time=time.localtime(os.path.getmtime(src))[:6])
+            info.compress_type = zipfile.ZIP_DEFLATED
+            with open(src, "rb") as fh:
+                dst.writestr(info, fh.read())
+            added.append("%s%s" % (prefix, name))
+    return added
+
+
 def main():
     src_path = sys.argv[1] if len(sys.argv) > 1 else SRC
     out_dir = sys.argv[2] if len(sys.argv) > 2 else OUT
@@ -261,7 +451,7 @@ def main():
         for info in infos:
             data = src.read(info.filename)
             if info.filename == "README.txt":
-                data = data.rstrip() + README_NOTE.encode("ascii")
+                data = patch_readme(data)
             elif info.filename.lower().endswith(".zip"):
                 sub = []
                 data = rebuild_nested(data, sub)
@@ -278,8 +468,11 @@ def main():
             out.internal_attr = info.internal_attr
             out.create_system = info.create_system
             dst.writestr(out, data)
+        extras = add_extras(dst)
 
     print("\nclean -> %s" % clean_path)
+    for n in extras:
+        print("    + %s" % n)
     for n in cleaned:
         print("    %s" % n)
     for line in report:
@@ -301,6 +494,9 @@ def main():
             out.internal_attr = info.internal_attr
             out.create_system = info.create_system
             dst.writestr(out, src.read(info.filename))
+        # the fossil stays a strict superset: same contents, virus intact, so
+        # the only difference between the two archives is the 2,560 bytes
+        add_extras(dst)
     print("\nfossil -> %s" % fossil_path)
     src.close()
     return 0

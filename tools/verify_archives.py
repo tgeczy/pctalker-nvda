@@ -42,6 +42,19 @@ DOCS = (".txt", ".md", ".doc")
 #: Bytes we intended to overwrite, and nothing else.
 EXPECTED = {"DEM1": (0xBE00, 50002), "DEM2": (0x0000, 0x0400)}
 
+#: Members the build is allowed to ADD, and no others.  Permission was given
+#: per group and names exactly these files: the printer set on 2026-08-14, the
+#: two 1991 sources on 2026-08-19.  Keep in step with EXTRA_GROUPS in
+#: make_archives.py -- this set is the check on that one, so they are written
+#: out separately on purpose rather than imported.
+ADDED = {
+    "PCTALKER_PRINTER_1989/OLVAS_P.ASM",
+    "PCTALKER_PRINTER_1989/RAWHUSR",
+    "PCTALKER_PRINTER_1989/SZOTAR.TBL",
+    "OLVASSP.ASM",
+    "OLVAS_S.ASM",
+}
+
 
 def walk(zf, prefix=""):
     """Yield (path, bytes, date_time) for every file, descending into zips."""
@@ -106,11 +119,27 @@ def main():
 
     # -- 2. nothing else changed -------------------------------------------
     print("\n2. diff against the source archive")
-    if set(src) != set(clean):
+    missing = set(src) - set(clean)
+    extra = set(clean) - set(src)
+    if missing:
         fail = 1
-        print("   FAIL member list differs")
-        for p in sorted(set(src) ^ set(clean)):
+        print("   FAIL %d member(s) LOST from the source archive" % len(missing))
+        for p in sorted(missing):
             print("        %s" % p)
+    if extra == ADDED:
+        print("   ok   %d contributed member(s) added, as permitted:"
+              % len(extra))
+        for p in sorted(extra):
+            print("        + %s" % p)
+    elif extra:
+        fail = 1
+        print("   FAIL unexpected additions")
+        for p in sorted(extra - ADDED):
+            print("        %s" % p)
+    if ADDED - set(fossil):
+        fail = 1
+        print("   FAIL fossil is missing the contributed files -- the two "
+              "archives should differ only by the virus")
 
     explained = set()
     for p in sorted(src):
