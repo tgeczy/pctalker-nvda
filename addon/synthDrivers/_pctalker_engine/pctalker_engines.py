@@ -239,35 +239,39 @@ class Readspf1990(Voice):
                      should_cancel=should_cancel)
 
 
-#: WITHDRAWN, not removed, at the author's request on 2026-08-14.  He reported
-#: the two speaker voices as "nem folyamatos, szakadozo" -- not continuous,
-#: broken up -- and he is right.  Measured on one machine, warmed:
+#: RESTORED 2026-08-19, with the author's permission: "Termeszetesen nincs
+#: semmi kifogasom az ellen, hogy a ket hangszoros hangot az On bovitmenyebe
+#: referenciakent betegye."
+#:
+#: The condition the 2026-08-14 withdrawal named was never met -- the pump loop
+#: is still what it was.  What changed is the JOB.  These two exist now to
+#: answer "what did the 1990 program actually do", and daily reading has
+#: somewhere better to go: the author's own Python rewrites of the same three
+#: editions, which emulate nothing and answer instantly.
+#:
+#: The measurement stands, and is exactly why they are reference voices rather
+#: than working ones.  Same machine, warmed, per second of audio produced:
 #:
 #:     PC-TALKER 5.01   5.0x faster than real time, first block 22 ms
 #:     READSPF          1.7x                        first block 72 ms
 #:     SPEAKER 1.0      1.8x                        first block 72 ms
 #:
-#: A 1.7x margin does not survive a slower machine, a Say All, or any load:
-#: the player runs dry and speech breaks up.  5.01's 5x does.  The cause is
-#: structural rather than mysterious -- the speaker engines halt once per
-#: SAMPLE, so they make ~18356 round trips into Python per second of audio,
-#: twice the rate 5.01 needs and at a higher cost each.  The per-sample loop
-#: still does a ctypes mem_read to probe for HLT and two float divisions every
-#: iteration; all three are cacheable.
-#:
-#: The classes stay, the engines stay, tools/ still drives them.  Put them back
-#: in this tuple when the pump loop is fast enough to deserve it.
-_WITHDRAWN = (Readspf1990, Speaker10)
+#: A 1.7x margin does not survive a slower machine, a Say All, or any load: the
+#: player runs dry and speech breaks up.  That is an unfair price for a default
+#: and a fair one for a reference build.  The pump loop is still worth fixing --
+#: the speaker engines halt once per SAMPLE, ~18356 crossings into Python per
+#: second of audio, and the per-sample loop still does a ctypes mem_read to
+#: probe for HLT plus two float divisions every iteration, all three cacheable.
 
 #: Ordered by date, so the voice list reads as a lineage.
-VOICES = (PCTalker501,)
+VOICES = (Readspf1990, Speaker10, PCTalker501)
 
 #: The Sound Blaster build is the default, at the author's request (2026-08-11):
 #: on his machine the speaker voices still did not match what he remembers, and
-#: 5.01 is the one that reaches a new user sounding the way it should.  The other
-#: two stay in the list -- he asked for them to be withdrawn while the speaker
-#: output was wrong, not removed, and the cone model above is that fix.
-#: Stated rather than inferred from dict order, because it is the most
+#: 5.01 is the one that reaches a new user sounding the way it should.  It is
+#: also the only one of the three with the margin to be read with, and the one
+#: his own 2026 Sound Blaster rewrite was checked against -- same echo, same
+#: pitch.  Stated rather than inferred from dict order, because it is the most
 #: user-visible decision in this file.
 DEFAULT_VOICE = PCTalker501.id
 

@@ -15,30 +15,51 @@ program runs</strong>, instruction by instruction, inside NVDA. Its speech eleme
 cut from 8&nbsp;kHz recordings of Kir&aacute;ly J&oacute;zsef's <em>own voice</em>, made
 in 1987, so the voice you hear is his.</p>
 
-<h2>Two voices</h2>
-<p>Version 2.0 adds a second engine. Both are selectable in NVDA's
-<strong>voice</strong> list, and both are Kir&aacute;ly J&oacute;zsef's own
-software running instruction by instruction &mdash; no DOSBox, no external
-program.</p>
+<h2>Three voices</h2>
+<p>All three are selectable in NVDA's <strong>voice</strong> list, in the order
+they were written, and all three are Kir&aacute;ly J&oacute;zsef's own software
+running instruction by instruction &mdash; no DOSBox, no external program.</p>
 <dl>
-<dt><strong>SPEAKER 1.0 (1990) &mdash; PC speaker</strong> (default)</dt>
+<dt><strong>READSPF (1990) &mdash; PC speaker</strong></dt>
+<dd>The earliest build here: <code>READSPF.EXE</code>, dated 18 March 1990, the
+one the author's own <code>READSPF.ASM</code> describes. It reads standard input
+directly and speaks numbers by itself. It is also the only edition the author did
+not rewrite in Python in 2026, so this is the only place it still runs.</dd>
+<dt><strong>SPEAKER 1.0 (1991) &mdash; PC speaker</strong></dt>
 <dd>The build for a machine with no sound card at all. Amplitude becomes pulse
-width on channel 2 of the 8253 timer, at 18356&nbsp;Hz. It is the cleaner of the
-two by ear, because it has no smoothing stage joining its speech elements and
-therefore no echo. The program that runs here is the original
-<code>OLVASSP.EXE</code>, dated 27 January 1991; its banner reads
-<em>PC-TALKER Besz&eacute;dszintetiz&aacute;tor / SPEAKER_ v. 1.0</em>,
+width on channel 2 of the 8253 timer, at 18356&nbsp;Hz. The program that runs
+here is the original <code>OLVASSP.EXE</code>, dated 27 January 1991; its banner
+reads <em>PC-TALKER Besz&eacute;dszintetiz&aacute;tor / SPEAKER_ v. 1.0</em>,
 Copyright 1990, and the recordings it is assembled from are dated 1989. It was
 never commercially released.</dd>
-<dt><strong>PC-TALKER 5.01 (1991) &mdash; Sound Blaster</strong></dt>
-<dd>The version described below, run from a memory image of the resident
-driver. Slightly warmer, with a faint room echo that comes from the stage that
-smooths between its concatenated voice elements.</dd>
+<dt><strong>PC-TALKER 5.01 (1991) &mdash; Sound Blaster</strong> (default)</dt>
+<dd>The last version, run from a memory image of the resident driver. Slightly
+warmer, with a faint room echo &mdash; see below. It is the default because it is
+far the fastest of the three, and so the only one with the margin to be read
+with.</dd>
 </dl>
-<p>There is no reverb control. The 1991 manual documents a <code>#vnnnn</code>
-command, and it does change the output &mdash; but it only ever <em>adds</em>
-delay on top of the echo that is already there, so no setting of it can produce
-a dry voice. That is why SPEAKER is the default.</p>
+<p>The two PC speaker voices pass through a filter that models the small internal
+speaker: 4200&nbsp;Hz low-pass and 400&nbsp;Hz high-pass. A real cone has mass. It
+could not follow the jumps a modern sound card reproduces perfectly, and it had no
+bass either, so returning the raw samples is not more faithful but less. Added at
+the author's decision, August 2026.</p>
+
+<h2>What this add-on is for</h2>
+
+<p>It is a reference. It runs the original 1990&ndash;91 programs byte for byte, so
+you can ask what they actually did. The two PC speaker voices are slow &mdash; they
+hold only about a 1.7&times; margin over playback &mdash; so on a slower machine or
+a long Say All they can break up. For everyday reading, use the author's own 2026
+Python rewrites of the same three editions (PCTALKER Printer, PC Speaker and Sound
+Blaster): they emulate nothing and answer instantly.</p>
+
+<p>The echo in 5.01 is deliberate, and it has a name. The <code>HANG</code> routine
+keeps a circular delay buffer controlled by a variable called <code>keses</code>
+&mdash; Hungarian for <em>delay</em> &mdash; whose default is 250 samples, and the
+delayed output is fed back into the input, so the echoes decay recursively. The
+1991 manual documents a <code>#vnnnn</code> command that changes it, but it only
+ever <em>adds</em> delay on top of what is already there, so no setting of it
+produces a dry voice. It is not exposed as a setting.</p>
 
 <h2>How it works</h2>
 

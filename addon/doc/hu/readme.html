@@ -15,30 +15,49 @@ utasításról utasításra, az NVDA-n belül. A beszédelemeket Király József
 <em>saját hangjáról</em> készült, 8 kHz-es felvételekből vágta ki, tehát az itt hallható
 hang az övé.</p>
 
-<h2>K&eacute;t hang</h2>
-<p>A 2.0-s v&aacute;ltozat egy m&aacute;sodik motort is tartalmaz. Mindkett&#337;
-kiv&aacute;laszthat&oacute; az NVDA <strong>hang</strong> list&aacute;j&aacute;ban,
-&eacute;s mindkett&#337; Kir&aacute;ly J&oacute;zsef saj&aacute;t programja, utas&iacute;t&aacute;sr&oacute;l
-utas&iacute;t&aacute;sra futtatva &mdash; DOSBox n&eacute;lk&uuml;l, k&uuml;ls&#337; program n&eacute;lk&uuml;l.</p>
+<h2>Három hang</h2>
+<p>Mindhárom kiválasztható az NVDA <strong>hang</strong> listájában, a keletkezésük
+sorrendjében, és mindhárom Király József saját programja, utasításról utasításra
+futtatva &mdash; DOSBox nélkül, külső program nélkül.</p>
 <dl>
-<dt><strong>SPEAKER 1.0 (1990) &mdash; PC-hangsz&oacute;r&oacute;</strong> (alap&eacute;rtelmezett)</dt>
-<dd>Az a v&aacute;ltozat, amelyhez semmilyen hangk&aacute;rtya nem kell: az
-amplit&uacute;d&oacute; impulzussz&eacute;less&eacute;gg&eacute; v&aacute;lik a 8253
-id&#337;z&iacute;t&#337; 2-es csatorn&aacute;j&aacute;n, 18356&nbsp;Hz-en. F&uuml;lre ez a
-tisztább a kett&#337; k&ouml;z&uuml;l, mert nincs benne a beszédelemeket
-&ouml;sszesim&iacute;t&oacute; fokozat, &iacute;gy visszhang sem. Az eredeti
-<code>OLVASSP.EXE</code> fut, 1991. janu&aacute;r 27-i d&aacute;tummal; a c&iacute;mk&eacute;pe
-<em>PC-TALKER Besz&eacute;dszintetiz&aacute;tor / SPEAKER_ v. 1.0</em>, Copyright 1990,
-a felv&eacute;telek pedig 1989-esek. Kereskedelmi forgalomba soha nem ker&uuml;lt.</dd>
-<dt><strong>PC-TALKER 5.01 (1991) &mdash; Sound Blaster</strong></dt>
-<dd>Az al&aacute;bb le&iacute;rt v&aacute;ltozat, a rezidens meghajt&oacute;
-mem&oacute;riak&eacute;p&eacute;b&#337;l futtatva. Kicsit melegebb hangz&aacute;s&uacute;, halv&aacute;ny
-term&eacute;szetes visszhanggal, ami az elemeket &ouml;sszesim&iacute;t&oacute; fokozatb&oacute;l ered.</dd>
+<dt><strong>READSPF (1990) &mdash; PC-hangszóró</strong></dt>
+<dd>A legkorábbi változat: a <code>READSPF.EXE</code>, 1990. március 18-i dátummal,
+az, amelyet a szerző saját <code>READSPF.ASM</code>-je leír. Közvetlenül a standard
+inputról olvas, és a számokat magától kimondja. Ez az egyetlen kiadás, amelyet a
+szerző 2026-ban nem írt át Pythonra, tehát máshol nem is fut, csak itt.</dd>
+<dt><strong>SPEAKER 1.0 (1991) &mdash; PC-hangszóró</strong></dt>
+<dd>Az a változat, amelyhez semmilyen hangkártya nem kell: az amplitúdó
+impulzusszélességgé válik a 8253 időzítő 2-es csatornáján, 18356&nbsp;Hz-en. Az
+eredeti <code>OLVASSP.EXE</code> fut, 1991. január 27-i dátummal; a címképe
+<em>PC-TALKER Beszédszintetizátor / SPEAKER_ v. 1.0</em>, Copyright 1990, a
+felvételek pedig 1989-esek. Kereskedelmi forgalomba soha nem került.</dd>
+<dt><strong>PC-TALKER 5.01 (1991) &mdash; Sound Blaster</strong> (alapértelmezett)</dt>
+<dd>Az utolsó változat, a rezidens meghajtó memóriaképéből futtatva. Kicsit melegebb
+hangzású, halvány visszhanggal &mdash; lásd alább. Azért ez az alapértelmezett, mert
+messze ez a leggyorsabb a három közül, tehát egyedül ennek van elég tartaléka
+ahhoz, hogy olvasni lehessen vele.</dd>
 </dl>
-<p>Visszhangszab&aacute;lyz&oacute; nincs. Az 1991-es k&eacute;zik&ouml;nyv le&iacute;r egy
-<code>#vnnnn</code> parancsot, &eacute;s az val&oacute;ban v&aacute;ltoztat a hangon &mdash;
-de csak <em>hozz&aacute;ad</em> a m&aacute;r megl&eacute;v&#337; visszhanghoz, elvenni bel&#337;le
-nem tud. Ez&eacute;rt a SPEAKER az alap&eacute;rtelmezett.</p>
+<p>A két hangszórós hang egy szűrőn megy át, amely a kis belső hangszóró viselkedését
+modellezi: 4200&nbsp;Hz-es aluláteresztő és 400&nbsp;Hz-es felüláteresztő. Egy valódi
+membránnak tömege van. Nem tudta követni azokat az ugrásokat, amelyeket a mai
+hangkártya hibátlanul lejátszik, és mélye sem volt &mdash; a nyers minták visszaadása
+ezért nem hűbb, hanem kevésbé hű. A szerző döntése alapján, 2026 augusztusában.</p>
+
+<h2>Mire való ez a bővítmény?</h2>
+
+<p>Referencia. Az eredeti 1990&ndash;91-es programokat futtatja, bájtról bájtra, hogy
+meg lehessen nézni, mit csináltak valójában. A két hangszórós hang lassú &mdash;
+körülbelül 1,7-szeres előnyt tart a lejátszással szemben &mdash;, ezért gyengébb gépen
+vagy hosszú felolvasásnál szaggathat. Napi olvasáshoz a szerző saját, 2026-ban
+Pythonban újraírt bővítményeit érdemes használni (PCTALKER Printer, PC Speaker és
+Sound Blaster): azok nem emulálnak semmit, és azonnal válaszolnak.</p>
+
+<p>Az 5.01 visszhangja szándékos, és neve is van. A <code>HANG</code> rutin körkörös
+pufferét a <code>keses</code> nevű változó vezérli, alapértelmezésben 250 mintával, és
+a késleltetett jel visszakerül a bemenetre, ezért halkulnak a visszhangok rekurzívan.
+Az 1991-es kézikönyv leír egy <code>#vnnnn</code> parancsot, amely változtat rajta, de
+csak <em>hozzáad</em> a már meglévőhöz, elvenni belőle nem tud, ezért nincs olyan
+beállítása, amivel száraz hangot kapnánk. Külön beállításként nem jelenik meg.</p>
 
 <h2>Hogyan működik?</h2>
 
