@@ -9,9 +9,37 @@ process. No DOSBox, no external program, no DOS.
 >
 > — Király József
 
+## Which one do you want?
+
+There are **four** PC-TALKER add-ons for NVDA, and they split cleanly in two.
+
+| | This repository | [**pctalker-python**](https://github.com/tgeczy/pctalker-python) |
+|---|---|---|
+| What runs | the original 1990–91 DOS programs, emulated | Python, no emulation |
+| Who wrote it | the emulator: tgeczy. The engines: Király József | Király József, all of it |
+| Add-ons | one, with three voices | three, one per edition |
+| Speed | 5× real time on 5.01, 1.7× on the speaker voices | instant |
+| Use it to | ask what the original programs actually did | **read your screen** |
+
+**If you just want a Hungarian voice that works, install
+[pctalker-python](https://github.com/tgeczy/pctalker-python).** In August 2026
+the author rewrote all three editions himself, in Python, from his own assembly
+sources. They emulate nothing and answer instantly.
+
+This repository is the **reference build**. It is the only place the original
+binaries still run, which is what makes it worth keeping: his Sound Blaster
+rewrite was checked against the 1991 program running here — same echo, same
+pitch. In his own words:
+
+> Az Ön által készített, az eredeti .exe fájlokat használó emuláció óriási érték,
+> az én verzióim sem lennének hitelesek ezek nélkül.
+
+It is also the only place `READSPF.EXE` runs at all: it is the one edition he did
+not rewrite.
+
 ## The three voices
 
-**READSPF (1990) — PC speaker.** *(default)* The earliest of the three, dated
+**READSPF (1990) — PC speaker.** The earliest of the three, dated
 18 March 1990, and the build the author's own `READSPF.ASM` describes. It reads
 standard input directly and speaks numbers by itself, so it needs none of the
 workarounds the 1991 build requires. This is the version `READDEMO.BAT` was
@@ -26,10 +54,14 @@ Never commercially released. The program that runs is the original
 1.0*, Copyright 1990, and the recordings it is assembled from are dated 1989.
 No smoothing stage between speech elements, and therefore no echo.
 
-**PC-TALKER 5.01 (1991) — Sound Blaster.** Run from a memory image of the
-resident driver, called through its `INT F1h` entry point. Slightly warmer,
-with a faint room echo that comes from the stage smoothing between its
-concatenated voice elements.
+**PC-TALKER 5.01 (1991) — Sound Blaster.** *(default)* The last version, run
+from a memory image of the resident driver, called through its `INT F1h` entry
+point. Slightly warmer, with a faint room echo — which is deliberate, and named
+in the author's `OLVAS_S.ASM`: the `HANG` routine keeps a circular delay buffer
+controlled by a variable called `keses`, Hungarian for *delay*, whose output is
+fed back into the input so the echoes decay recursively. The manual's `#vnnnn`
+command adds to it and cannot subtract, because 250 samples are already there.
+It is the default because it is by far the fastest of the three.
 
 Király József began PC-TALKER in 1987, cutting its speech elements from 8 kHz
 recordings of his own voice. It was shown at the 1988 Budapest fair driving a
