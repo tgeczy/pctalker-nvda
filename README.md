@@ -231,9 +231,12 @@ The engines, the voice and the speech elements are the work of **Király
 József**, who made the PC-TALKER versions between 1989 and 1991. He gave
 express permission for all of it to be published — the executables, the speech
 data and the reverse engineering alike — and asked for no restriction on its
-use. His files are kept out of this tree by choice rather than necessity: they
-belong with the archive and the released package, where they stay together and
-stay findable.
+use. The DOS-era files are kept out of this tree by choice rather than
+necessity: they belong with the archive and the released package, where they
+stay together and stay findable. His 2026 Python rewrites are the exception and
+are here in full, in `kiraly/`, because he wrote them to be published.
 
-The NVDA driver, the DOS host and the research are by **tgeczy** and are MIT
-licensed; see `LICENSE`.
+**Licence scope.** The `LICENSE` file at the root is MIT and covers the NVDA
+driver, the DOS host and the research — tgeczy's work. **It does not cover
+`kiraly/`.** Those files are Király József's own, published here with his
+permission; he has stated no licence for them, and that remains his to say.

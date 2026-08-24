@@ -2,6 +2,11 @@
 
 **Written by Király József**, the author of PC-TALKER, in August 2026.
 
+> **Licence.** The MIT licence at the root of this repository covers the NVDA
+> driver, the DOS host and the reverse engineering — not this directory. Everything
+> under `kiraly/` is Király József's own work, published with his permission. He
+> has stated no licence for it, and that is his to decide.
+
 Three NVDA speech synthesizers, one for each edition of the Hungarian PC-TALKER
 he wrote between 1989 and 1991. He rewrote all three himself, thirty-five years
 later, from his own surviving assembly sources. Published here with his express
@@ -101,6 +106,11 @@ PC-TALKER, all three editions, and these three Python rewrites are the work of
 # PC-TALKER NVDA alatt — a szerző saját Python-változatai
 
 **Készítette Király József**, a PC-TALKER szerzője, 2026 augusztusában.
+
+> **Licenc.** A tároló gyökerében lévő MIT licenc az NVDA-meghajtóra, a
+> DOS-gazdaprogramra és a visszafejtésre vonatkozik — erre a mappára nem. A
+> `kiraly/` alatt minden Király József saját munkája, az ő engedélyével közzétéve.
+> Licencet nem kötött ki hozzá, és ez az ő döntése.
 
 Három NVDA-beszédszintetizátor, egy-egy a magyar PC-TALKER mindhárom
 változatához, amelyeket 1989 és 1991 között írt. Mindhármat ő maga írta újra,
